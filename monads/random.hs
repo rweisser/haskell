@@ -3,14 +3,19 @@
 
 {-
  - lcg and getRandom came from Ertegrul's tutorial.  I somehow
- - create randomList and randomList' myself.
+ - managed to create randomList and randomList' myself.
  -}
-
--- \s -> (a, s)
--- \a -> \s -> (a, s)
 
 import Control.Monad.State
 import Data.Word
+
+-- Some types for reference:
+--
+-- get         :: s -> (a, s)
+-- put         :: a -> s -> (a, s)
+-- runState    :: (s -> (a, s)) -> s -> (a, s)
+-- evalState   :: (s -> (a, s)) -> s -> a
+-- execState   :: (s -> (a, s)) -> s -> s
 
 type LCGState = Word32
 
@@ -24,15 +29,15 @@ lcg s0 = (output, s1)
 -- produces next random vaue
 getRandom :: State LCGState Integer
 getRandom = get >>= \s0 -> let (x, s1) = lcg s0
-                           in put s1 >> return x   -- put returns ((), s1), return returns (x, s1)
+                           in put s1 >> return x
 
--- producess infinite list of random values using do notation
+-- produces an infinite list of random values using do notation
 randomList :: State LCGState [Integer]
 randomList = do x  <- getRandom
                 xs <- randomList
                 return (x:xs)
 
--- producess infinite list of random values using bind
+-- produces an infinite list of random values using bind
 randomList' :: State LCGState [Integer]
 randomList' = getRandom >>= \x -> randomList' >>= \xs -> return (x:xs)
 
@@ -40,3 +45,8 @@ test01 = take 20 (evalState randomList  0)
 test02 = take 20 (evalState randomList' 0)
 test03 = take 20 (evalState randomList  100)
 test04 = take 20 (evalState randomList' 100)
+
+test_all = do print test01
+              print test02
+              print test03
+              print test04
