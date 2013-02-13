@@ -9,10 +9,10 @@
 import Control.Monad.State
 import Data.Word
 
--- Some types for reference:
+-- Some types for reference (after unwrapping):
 --
--- get         :: s -> (a, s)
--- put         :: a -> s -> (a, s)
+-- get         :: s -> (s, s)
+-- put         :: s -> s -> ((), s)
 -- runState    :: (s -> (a, s)) -> s -> (a, s)
 -- evalState   :: (s -> (a, s)) -> s -> a
 -- execState   :: (s -> (a, s)) -> s -> s
