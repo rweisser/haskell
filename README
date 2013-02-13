@@ -1,0 +1,5 @@
+Some Haskell Programs.
+
+monads/rpn.lhs - Reverse Polish Notation Calculator - Non-Monadic
+monads/rpnm.lhs - Reverse Polish Notation Calculator - Monadic
+monads/random.hs - Infinite list of pseudo-random numbers
