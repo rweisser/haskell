@@ -16,17 +16,17 @@ interesting, but did not make the program easier to write or to
 understand.  I am still looking for a more significant State monad
 example.
 
-Example:  1 3 + 5 * 6 3 / *
+ Example:  1 3 + 5 * 6 3 / *
 
-Evaluation:  1 3 + 5 * 6 3 / *
-             -----
-             4     5 * 6 3 / *
-             ---------
-             20        6 3 / *
-                       -----
-             20        2     *
-             -----------------
-             40
+ Evaluation:  1 3 + 5 * 6 3 / *
+              -----
+              4     5 * 6 3 / *
+              ---------
+              20        6 3 / *
+                        -----
+              20        2     *
+              -----------------
+              40
 
 The definitions of the State monad and related classes and functions
 are in Control.Monad.State.
@@ -143,7 +143,7 @@ and nothing in the expression stack.
 There are probably better ways to do this, but this looks like it
 will work.
 
-This is the main function.  It just passes an empty work stack and
+calc is the main function.  It just passes an empty work stack and
 the expression stack to eval.  The work stack w returned by eval
 should contain one value.
 
@@ -151,18 +151,19 @@ should contain one value.
 > calc expr = let (e, w) = eval (expr, [])
 >             in  getVal (head w)
 
-Evaluate the expression.  The function starts with an empty work
-stack and a full expression stack and terminates when there is one
-value in the work stack and the expression stack is empty.
+eval evaluates an rpn expression.  The function starts with an
+empty work stack and a full expression stack and terminates when
+there is one value in the work stack and the expression stack is
+empty.
 
 > eval :: (Stack, Stack) -> (Stack, Stack)
 > eval ([], [x]) = ([], [x])
 > eval (e,  w)   = eval $ step e w
 
-Process the top of the expression stack.  Note that step is never
-called when the expression stack is empty.  If the item at the top
-of the expression stack is an operator, call binOp to apply the
-operator to the top 2 items on the work stack.  Then return the
+stop processes the top of the expression stack.  Note that step is
+never called when the expression stack is empty.  If the item at
+the top of the expression stack is an operator, call binOp to apply
+the operator to the top 2 items on the work stack.  Then return the
 popped expression stack and the possibly modified work stack.  If
 the item at the top of the expression stack is a value, just push
 it onto the work stack and return both stacks.
@@ -175,9 +176,9 @@ it onto the work stack and return both stacks.
 >         _       -> let w' = execState (binOp item) w
 >                    in (e', w')
 
-Do one binary operation.  Pop off the two operands.  Apply the
-operator.  Push the result back on the stack and return the stack.
-The stack is always the work stack.
+binOp performs one binary operation.  Pop off the two operands.
+Apply the operator.  Push the result back on the stack and return
+the stack.  The stack is always the work stack.
 
 > binOp :: Item -> State Stack ()
 > binOp op = do val2 <- popM
@@ -206,8 +207,9 @@ from rpn.lhs, which requires threading the state:
                        Op Div  -> val1 / val2
                  in push (Val res) s2
 
-A test function.  It prints a comment and then compares two expressions
-for equality, printing "passed" or "failed," respectively..
+testEq is a test function.  It prints a comment and then compares
+two expressions for equality, printing "passed" or "failed,"
+respectively..
 
 > testEq e r m = do putStr m
 >                   putStr ": "
@@ -256,17 +258,19 @@ Tests:
 
 All the tests:
 
-> test_all = do test01
->               test02
->               test03
->               test04
->               test05
->               test06
->               test07
->               test08
->               test09
+> testAll = do test01
+>              test02
+>              test03
+>              test04
+>              test05
+>              test06
+>              test07
+>              test08
+>              test09
+>              testFail
 
 Test a malformed rpn expression.
 The result will be *** Exception: pop used on empty stack.
 
-> test_fail = putStrLn $ show $ calc (Val 1.0 : example1)
+> testFail = do putStr "failure test: "
+>               putStrLn $ show $ calc (Val 1.0 : example1)
