@@ -9,17 +9,17 @@ a separate work stack to hold values as they are being processed.
 At the end, if everything goes well, the work stack will contain a
 single value (the result) and the expression stack will be empty.
 
- Example:  1 3 + 5 * 6 3 / *
+    Example:  1 3 + 5 * 6 3 / *
 
- Evaluation:  1 3 + 5 * 6 3 / *
-              -----
-              4     5 * 6 3 / *
-              ---------
-              20        6 3 / *
-                        -----
-              20        2     *
-              -----------------
-              40
+    Evaluation:  1 3 + 5 * 6 3 / *
+                 -----
+                 4     5 * 6 3 / *
+                 ---------
+                 20        6 3 / *
+                           -----
+                 20        2     *
+                 -----------------
+                 40
 
 The stacks contain numeric values and operators.
 

@@ -16,17 +16,17 @@ interesting, but did not make the program easier to write or to
 understand.  I am still looking for a more significant State monad
 example.
 
- Example:  1 3 + 5 * 6 3 / *
+    Example:  1 3 + 5 * 6 3 / *
 
- Evaluation:  1 3 + 5 * 6 3 / *
-              -----
-              4     5 * 6 3 / *
-              ---------
-              20        6 3 / *
-                        -----
-              20        2     *
-              -----------------
-              40
+    Evaluation:  1 3 + 5 * 6 3 / *
+                 -----
+                 4     5 * 6 3 / *
+                 ---------
+                 20        6 3 / *
+                           -----
+                 20        2     *
+                 -----------------
+                 40
 
 The definitions of the State monad and related classes and functions
 are in Control.Monad.State.
