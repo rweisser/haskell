@@ -324,5 +324,4 @@ Test a malformed rpn expression.
 The result will be *** Exception: pop used on empty stack.
 
 > testFail = do putStr "failure test: "
-
 >               putStrLn $ show $ calc (Val 1.0 : example1)
