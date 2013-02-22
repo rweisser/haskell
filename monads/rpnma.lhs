@@ -1,7 +1,6 @@
-rpnm.lhs
+rpnma.lhs
 
-
-A reverse polish notation evaluator.  Somewhat monadic.
+A reverse polish notation evaluator.  All monadic.
 
 The implementation uses stacks of Items.  The items in the stack
 are numeric values or operators.  There is an expression stack which
@@ -10,11 +9,12 @@ a separate work stack to hold values as they are being processed.
 At the end, if everything goes well, the work stack will contain a
 single value (the result) and the expression stack will be empty.
 
-The monadic part is that the stack manipulation uses the State
-monad.  Getting the State monad to work, even in a trivial way, was
-interesting, but did not make the program easier to write or to
-understand.  I am still looking for a more significant State monad
-example.
+There are two uses of the State monad in this program:
+
+    The stack operations are monadic:  pushM, popM, and emptyM
+
+    The overall state is an algebraic data type containing the
+    expression stack and the work stack.
 
 This is how an rpn evaluation works:
 
@@ -56,7 +56,7 @@ The stacks contain numeric values and operators.
 
 > data Oper = Add | Sub | Mult | Div deriving (Eq, Show)
 
-An example rpn stack:
+An example rpn expression stack:
 
 > example1 :: Stack
 > example1 = [Val 1.0,
@@ -88,9 +88,9 @@ manner, as follows:
                 return $ null stack
 
 However, I wanted to preserve the illusion that pop, push, and empty
-are part of a stack abstract data type, to whose implementation I
-do not have access.  So I put them in where clauses, as a pretense
-of hiding their implementations.
+are part of a stack abstract data type, to whose implementation I do not
+have access.  So I put them in where clauses, as a pretense of
+hiding their implementations.
 
 popM is the monadic version of pop.
 
@@ -117,6 +117,16 @@ emptyM is the monadic version of empty.
 >             return $ empty stack
 >   where
 >     empty = null
+
+The state for the step function is RpnState Stack Stack.  The first
+stack is the expression stack.  It contains the part of the expression
+which has not yet been used.  The second stack is the work stack.
+Values are pushed onto the work stack until an Op is encountered.
+When an Op is encountered, the Op and the work stack are passed to
+binOp for evaluation.
+
+> data RpnState = RpnState {exprStack :: Stack, workStack :: Stack}
+>                 deriving (Eq, Show)
 
 The evaluator pops items from the espression stack until it encounters
 an operator.  It stores the popped items in the work stack in
@@ -152,20 +162,34 @@ There are probably better ways to do this, but this looks like it
 will work.
 
 calc is the main function.  It just passes an empty work stack and
-the expression stack to eval.  The work stack w returned by eval
-should contain one value.
+the expression stack to eval.  The work stack returned by execState
+eval should contain one value.
 
 > calc :: Stack -> Float
-> calc expr = let (e, w) = eval (expr, [])
->             in  getVal (head w)
+> calc expr = getVal $ head $ workStack $ execState eval $ RpnState expr []
+
+Old non-monadic version:
+
+    calc :: Stack -> Float
+    calc expr = let (e, w) = eval (expr, [])
+                in  getVal (head w)
 
 eval evaluates an expression.  The function starts with a full
 expression stack and an empty work stack and terminates when the
 expression stack is empty and the work stack contains one value.
 
-> eval :: (Stack, Stack) -> (Stack, Stack)
-> eval ([], [x]) = ([], [x])
-> eval (e,  w)   = eval $ step e w
+> eval :: State RpnState ()
+> eval = do rpnState <- get
+>           case rpnState of
+>             RpnState [] [n] -> put rpnState
+>             _               -> do step
+>                                   eval
+
+Old non-monadic version:
+
+    eval :: (Stack, Stack) -> (Stack, Stack)
+    eval ([], [x]) = ([], [x])
+    eval (e,  w)   = eval $ step e w
 
 step processes the top of the expression stack.  Note that step is
 never called when the expression stack is empty.  If the item at
@@ -176,13 +200,26 @@ work stack.  If the item at the top of the expression stack is a
 value, call just pushes it onto the work stack and returns both
 stacks.
 
-> step :: Stack -> Stack -> (Stack, Stack)
-> step e w =
->   let (item, e') = runState popM e
->   in  case item of
->         (Val n) -> (e', execState (pushM item) w)
->         _       -> let w' = execState (binOp item) w
->                    in (e', w')
+> step :: State RpnState ()
+> step = do
+>   s <- get
+>   let e = exprStack s
+>       w = workStack s
+>       (item, e') = runState popM e
+>       w' = case item of
+>          (Val n) -> execState (pushM item) w
+>          _       -> execState (binOp item) w
+>   put $ RpnState {exprStack = e', workStack = w'}
+
+Old non-monadic version:
+
+    step :: Stack -> Stack -> (Stack, Stack)
+    step e w =
+      let (item, e') = runState popM e
+      in  case item of
+            (Val n) -> (e', execState (pushM item) w)
+            _       -> let w' = execState (binOp item) w
+                       in (e', w')
 
 binOp performs one binary operation.  Pop off the two operands.
 Apply the operator.  Push the result back on the stack and return
@@ -236,28 +273,34 @@ Tests:
 >                 [Val 0.33333334, Val 10.0]
 >                 "binOp test"
 
-> test03 = testEq (step [Val 1.0, Val 3.0, Op Div, Val 10.0, Op Add] [])
->                 ([Val 3.0, Op Div, Val 10.0, Op Add], [Val 1.0])
+> test03 = testEq (execState step $ RpnState [Val 1.0, Val 3.0, Op Div, Val 10.0, Op Add] [])
+>                 (RpnState [Val 3.0, Op Div, Val 10.0, Op Add] [Val 1.0])
 >                 "step test"
 
-> test04 = testEq (step [Val 3.0, Op Div, Val 10.0, Op Add] [Val 1.0])
->                 ([Op Div,Val 10.0,Op Add],[Val 3.0,Val 1.0]) 
+Old non-monadic version of test03:
+
+    test03 = testEq (step [Val 1.0, Val 3.0, Op Div, Val 10.0, Op Add] [])
+                    ([Val 3.0, Op Div, Val 10.0, Op Add], [Val 1.0])
+                    "step test"
+
+> test04 = testEq (execState step $ RpnState [Val 3.0, Op Div, Val 10.0, Op Add] [Val 1.0])
+>                 (RpnState [Op Div,Val 10.0,Op Add] [Val 3.0,Val 1.0]) 
 >                 "step test"
 
-> test05 = testEq (step [Op Div, Val 10.0, Op Add] [Val 3.0, Val 1.0])
->                 ([Val 10.0,Op Add],[Val 0.33333334])
+> test05 = testEq (execState step $ RpnState [Op Div, Val 10.0, Op Add] [Val 3.0, Val 1.0])
+>                 (RpnState [Val 10.0,Op Add] [Val 0.33333334])
 >                 "step test"
 
-> test06 = testEq (step [Val 10.0, Op Add] [Val 0.33333334])
->                 ([Op Add],[Val 10.0,Val 0.33333334])
+> test06 = testEq (execState step $ RpnState [Val 10.0, Op Add] [Val 0.33333334])
+>                 (RpnState [Op Add] [Val 10.0,Val 0.33333334])
 >                 "step test"
 
-> test07 = testEq (step [Op Add] [Val 10.00, Val 0.33333334])
->                 ([],[Val 10.333333])
+> test07 = testEq (execState step $ RpnState [Op Add] [Val 10.00, Val 0.33333334])
+>                 (RpnState [] [Val 10.333333])
 >                 "step test"
 
-> test08 = testEq (eval (example1, []))
->                 ([],[Val 26.666668])
+> test08 = testEq (execState eval $ RpnState example1 [])
+>                 (RpnState [] [Val 26.666668])
 >                 "eval test"
 
 > test09 = testEq (calc example1)
@@ -281,4 +324,5 @@ Test a malformed rpn expression.
 The result will be *** Exception: pop used on empty stack.
 
 > testFail = do putStr "failure test: "
+
 >               putStrLn $ show $ calc (Val 1.0 : example1)

@@ -9,7 +9,9 @@ a separate work stack to hold values as they are being processed.
 At the end, if everything goes well, the work stack will contain a
 single value (the result) and the expression stack will be empty.
 
-    Example:  1 3 + 5 * 6 3 / *
+This is how an rpn evaluation works:
+
+    Expression:  1 3 + 5 * 6 3 / *
 
     Evaluation:  1 3 + 5 * 6 3 / *
                  -----
@@ -102,21 +104,22 @@ should contain one value.
 > calc expr = let (e, w) = eval (expr, [])
 >             in  getVal (head w)
 
-eval evaluates an expression.  The function starts with an empty
-work stack and a full expression stack and terminates when there
-is one value in the work stack and the expression stack is empty.
+eval evaluates an expression.  The function starts with a full
+expression stack and an empty work stack and terminates when the
+expression stack is empty and the work stack contains one value.
 
 > eval :: (Stack, Stack) -> (Stack, Stack)
 > eval ([], [x]) = ([], [x])
 > eval (e,  w)   = eval $ step e w
 
-stop processes the top of the expression stack.  Note that step is
+step processes the top of the expression stack.  Note that step is
 never called when the expression stack is empty.  If the item at
-the top of the expression stack is an operator, call binOp to apply
-the operator to the top 2 items on the work stack.  Then return the
-popped expression stack and the possibly modified work stack.  If
-the item at the top of the expression stack is a value, just push
-it onto the work stack and return both stacks.
+the top of the expression stack is an operator, step calls binOp
+to apply the operator to the top 2 items on the work stack.  Then
+it returns the popped expression stack and the possibly modified
+work stack.  If the item at the top of the expression stack is a
+value, call just pushes it onto the work stack and returns both
+stacks.
 
 > step :: Stack -> Stack -> (Stack, Stack)
 > step e w =
