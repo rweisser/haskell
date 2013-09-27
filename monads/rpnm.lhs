@@ -171,10 +171,9 @@ step processes the top of the expression stack.  Note that step is
 never called when the expression stack is empty.  If the item at
 the top of the expression stack is an operator, step calls binOp
 to apply the operator to the top 2 items on the work stack.  Then
-it returns the popped expression stack and the possibly modified
-work stack.  If the item at the top of the expression stack is a
-value, call just pushes it onto the work stack and returns both
-stacks.
+it returns the popped expression stack and the modified work stack.
+If the item at the top of the expression stack is a value, step
+just pushes it onto the work stack and returns both stacks.
 
 > step :: Stack -> Stack -> (Stack, Stack)
 > step e w =
