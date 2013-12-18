@@ -1,11 +1,11 @@
-Haskell =======
+# Haskell
 
-Fooling around with Haskell ---------------------------
+Fooling around with Haskell
+
+### In monads directory:
 
 To run any of these rpn programs, load it into ghci and run the
 testAll function.
-
-### In monads directory:
 
 rpn.lhs - reverse polish notation calculator - non-monadic
 
